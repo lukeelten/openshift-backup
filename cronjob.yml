@@ -1,0 +1,152 @@
+apiVersion: v1
+kind: Template
+labels:
+  template: openshift-backup
+  app: openshift-backup
+message: |-
+  Test Message
+metadata:
+  name: openshift-backup-template
+  annotations:
+    description: |-
+      This template deploys a cronjob which regularly created backups of all relevant cluster and namespaces objects. 
+      The backup should be stored outside and can be used to restore the cluster after a fresh installation.
+parameters:
+- name: NAME
+  displayName: Name
+  description: Base Name of backup cronjob. Will be used to determine the names of the API objects.
+  value: openshift-backup
+- name: NAMESPACE
+  displayName: Project
+  description: The project which is used to deploy the backup cronjob. Must exist before using this template.
+  value: openshift-infra
+- name: SCHEDULE
+  displayName: Schedule
+  description: Schedule determining when and how often backup is run. Format is euqal to standard Unix cronjobs
+  value: "15 2 * * *"
+- name: IMAGE
+  description: The image use for this cronjob
+  displayName: Image Name
+  value: lukeelten/openshift-backup
+- name: IMAGE_TAG
+  displayName: Version
+  description: The image tag to use.
+  value: 'latest' 
+- name: ENCRYPTION_KEY
+  displayName: "Encryption Key"
+  description: Public Key to encrypt the backups. Can be empty to disable encryption.
+  value: ""
+- name: CAPACITY
+  displayName: Capacity
+  description: Capacity of persistent volume claim to store the backups.
+  value: '10Gi'
+objects:
+- kind: ServiceAccount
+  apiVersion: v1
+  metadata:
+    name: ${NAME}
+    namespace: ${NAMESPACE}
+    labels:
+      app: ${NAME}
+- kind: ClusterRole
+  apiVersion: authorization.openshift.io/v1
+  metadata:
+    name: ${NAME}-role
+  rules:
+  - apiGroups:
+    - '*'
+    resources:
+    - '*'
+    verbs:
+    - list
+    - get
+    - watch
+  - apiGroups: null
+    nonResourceURLs:
+    - '*'
+    resources: []
+    verbs:
+    - list
+    - get
+- kind: ClusterRoleBinding
+  apiVersion: authorization.openshift.io/v1
+  metadata:
+    name: ${NAME}-role-binding
+    namespace: ${NAMESPACE}
+    labels:
+      app: ${NAME}
+  roleRef:
+    kind: ClusterRole
+    name: ${NAME}-role
+  subjects:
+  - kind: ServiceAccount
+    name: ${NAME}
+  userNames:
+  - "system:serviceaccount:${NAMESPACE}:${NAME}"
+- kind: PersistentVolumeClaim
+  apiVersion: v1
+  metadata:
+    name: ${NAME}
+    namespace: ${NAMESPACE}
+    labels:
+      app: ${NAME}
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${CAPACITY}
+- apiVersion: batch/v1beta1
+  kind: CronJob
+  metadata:
+    name: ${NAME}
+    namespace: ${NAMESPACE}
+    labels:
+      app: ${NAME}
+  spec:
+    schedule: ${SCHEDULE}
+    successfulJobsHistoryLimit: 5
+    failedJobsHistoryLimit: 3
+    jobTemplate:
+      spec:
+        template:
+          metadata:
+            labels:
+              app: ${NAME}
+          spec:
+            containers:
+            - env:
+              - name: TZ
+                value: 'Europe/Berlin'
+              - name: COMPRESS
+                value: '1'
+              - name: OUTPUT_PATH
+                value: '/backup'
+              - name: EXPORT_ALL
+                value: '1'
+              - name: ENCRYPT
+                value: ${ENCRYPTION_KEY}
+              - name: EXPORT_ALL
+                value: '1'
+              image: ${IMAGE}:${IMAGE_TAG}
+              imagePullPolicy: Always
+              name: openshift-backup
+              resources:
+                limits:
+                  cpu: 2
+                  memory: 512Mi
+                requests:
+                  cpu: 200m
+                  memory: 128Mi
+              volumeMounts:
+              - mountPath: /backup
+                name: ${NAME}-data
+            restartPolicy: Never
+            schedulerName: default-scheduler
+            serviceAccount: ${NAME}
+            serviceAccountName: ${NAME}
+            volumes:
+            - name: ${NAME}-data
+#              emptyDir: {}
+              persistentVolumeClaim:
+                claimName: ${NAME}
