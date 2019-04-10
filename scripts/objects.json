@@ -1,0 +1,34 @@
+{
+    "cluster-objects": [
+        "clusterrolebinding",
+        "clusterrole",
+        "group"
+    ],
+    "namespace-objects": [
+        "secret",
+        "cm",
+        "networkpolicy",
+        "serviceaccount",
+        "rolebinding",
+        "pod",
+        "egressnetworkpolicy",
+        "dc",
+        "bc",
+        "build",
+        "rc",
+        "svc",
+        "limitrange",
+        "resourcequota",
+        "pvc",
+        "route",
+        "template",
+        "cronjob",
+        "job",
+        "statefulset",
+        "hpa",
+        "deployment",
+        "poddisruptionbudget",
+        "daemonset",
+        "pv"
+    ]
+} 
