@@ -36,10 +36,14 @@ parameters:
   displayName: "Encryption Key"
   description: Public Key to encrypt the backups. Can be empty to disable encryption.
   value: ""
+- name: COMPRESSION
+  displayName: Enable Compression
+  description: Enable or disable the compression of the backup
+  value: "1"
 - name: CAPACITY
   displayName: Capacity
   description: Capacity of persistent volume claim to store the backups.
-  value: '10Gi'
+  value: '2Gi'
 objects:
 - kind: ServiceAccount
   apiVersion: v1
@@ -119,7 +123,7 @@ objects:
               - name: TZ
                 value: 'Europe/Berlin'
               - name: COMPRESS
-                value: '1'
+                value: ${COMPRESSION}
               - name: OUTPUT_PATH
                 value: '/backup'
               - name: EXPORT_ALL
@@ -147,6 +151,5 @@ objects:
             serviceAccountName: ${NAME}
             volumes:
             - name: ${NAME}-data
-#              emptyDir: {}
               persistentVolumeClaim:
                 claimName: ${NAME}
