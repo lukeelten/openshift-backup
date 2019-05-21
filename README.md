@@ -6,7 +6,6 @@ OpenShift Backup
 This projects provides a tool which regularly creates backups of your OpenShift / OKD cluster.
 
 
-
 # CLI Parameters
 Use `./export.sh [--all] [--help] [<projectname>...]` to export one or more projects manually.
 
@@ -82,6 +81,8 @@ tar xzf "export-2019-03-28.tar.gz"
 # Usage: ./import.sh <backup directory>
 ./import.sh "export-2019-03-28"
 ```
+
+During automatic import the cluster projects which are usually created during installation are omitted. If you want to import those projects or part of them, please apply the JSON files manually.
 
 ### Manual import 
 ```bash

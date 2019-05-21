@@ -20,7 +20,10 @@ checkoc() {
         command -v $i >/dev/null 2>&1 || die "$i required but not found" 3
     done
 
-    oc get all > /dev/null 2>&1 || die "Error: You are not logged in to the cluster." 4
+    oc get all > /dev/null 2>&1
+    if [[ $? -ne 0 ]]; then
+        die "Error: You are not logged in to the cluster." 4
+    fi
 }
 
 usage(){
@@ -43,8 +46,9 @@ usage(){
 
 # Exports a given type of objects
 export_type(){
-    if [ "$#" -lt "1" ]; then
-        echo "Error: Invalid parameters" > /dev/stderr
+    if [ $# -lt 1 ]; then
+        echo "Error: Invalid parameters for export type" > /dev/stderr
+        echo "Project: ${PROJECT}" > /dev/stderr
         return
     fi
 
@@ -68,6 +72,7 @@ export_type(){
 }
 
 # Check whether the given JSON list is empty
+# Warning: Probably the most used function. Change carefully!
 truncate_empty_list() {
     local BUFFER="$1"
     # return if list empty
@@ -104,13 +109,9 @@ sanitize_var() {
 }
 
 # Function to removed unused attributes which is applied to nearly all exports.
-# Warning: Probably the most used function. CHange carefully
+# Warning: Change carefully
 delete_common_attr() {
-    if [[ -z "$1" ]]; then
-        return
-    fi
-
-    echo "$1" | jq 'del('\
+    delete_attr "$1" 'del('\
 '.items[].status,'\
 '.items[].metadata.uid,'\
 '.items[].metadata.selfLink,'\
@@ -123,11 +124,20 @@ delete_common_attr() {
 
 # Helper function to call jq
 delete_attr() {
-    if [[ -z "$1" ]]; then
+    if [ $# -ne 2 ]; then
+        echo "Error: Invalid parameters for export type" > /dev/stderr
+        echo "Parameters: $@" > /dev/stderr
+        echo "Project: ${PROJECT}" > /dev/stderr
         return
     fi
 
-    echo "$1" | jq "$2"
+    local INPUT=$(truncate_empty_list "$1")
+    if [[ -z "${INPUT}" ]]; then
+        return
+    fi
+
+    local RESULT=$(echo "${INPUT}" | jq "$2")
+    truncate_empty_list "${RESULT}"
 }
 
 # Create base directory

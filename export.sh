@@ -1,8 +1,6 @@
 #!/bin/bash
 
 set -eo pipefail
-#set -x
-
 
 BASE=$(dirname "$0")
 
@@ -26,12 +24,12 @@ elif [[ $# -eq 1 ]]; then
     fi
 fi
 
+checkoc
+
 if [[ ! -z "${EXPORT_ALL}" && "${EXPORT_ALL}" != "0" ]]; then
-    checkoc
     make_base
     export_cluster
 elif [[ ! -z "${EXPORT_PROJECTS}" ]]; then
-    checkoc
     make_base
     export_projects "${EXPORT_PROJECTS}"
 else

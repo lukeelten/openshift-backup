@@ -100,6 +100,21 @@ objects:
     resources:
       requests:
         storage: ${CAPACITY}
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: ${NAME}
+    namespace: ${NAMESPACE}
+    labels:
+      app: ${NAME}
+  spec:
+    tags:
+    - name: ${IMAGE_TAG}
+      from:
+        kind: DockerImage
+        name: ${IMAGE}:${IMAGE_TAG}
+      importPolicy:
+        scheduled: true
 - apiVersion: batch/v1beta1
   kind: CronJob
   metadata:
@@ -132,7 +147,7 @@ objects:
                 value: ${ENCRYPTION_KEY}
               - name: EXPORT_ALL
                 value: '1'
-              image: ${IMAGE}:${IMAGE_TAG}
+              image: ${NAMESPACE}/${NAME}:${IMAGE_TAG}
               imagePullPolicy: Always
               name: openshift-backup
               resources:

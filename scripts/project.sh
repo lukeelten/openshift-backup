@@ -77,54 +77,83 @@ pv() {
 
 serviceaccount(){
     local BUFFER=$(export_type serviceaccounts)
-    local BUFFER=$(delete_common_attr "${BUFFER}")
-    local BUFFER=$(delete_attr "${BUFFER}" 'del(.items[]|select(.metadata.name=="builder"))')
-    local BUFFER=$(delete_attr "${BUFFER}" 'del(.items[]|select(.metadata.name=="deployer"))')
-    local BUFFER=$(delete_attr "${BUFFER}" 'del(.items[]|select(.metadata.name=="default"))')
-    echo "${BUFFER}"
+    if [[ -z "${BUFFER}" ]]; then
+        return
+    fi
+
+    local INVALID_SECRETS=$(echo "${BUFFER}" | jq '.items[].secrets[].name | select(. | match("-(token|dockercfg)-[0-9a-z]{5}$"))' | xargs)
+    local INVALID_IMGPULLSECS=$(echo "${BUFFER}" | jq '.items[].imagePullSecrets[].name | select(. | match("-(token|dockercfg)-[0-9a-z]{5}$"))' | xargs)
+
+    if [[ ! -z "${INVALID_SECRETS}" ]]; then
+        for INVALID_SECRET in ${INVALID_SECRETS}; do
+            local BUFFER=$(echo "${BUFFER}" | jq "del(.items[].secrets[]|select(.name==\"${INVALID_SECRET}\"))")
+        done
+    fi
+
+    if [[ ! -z "${INVALID_IMGPULLSECS}" ]]; then
+        for INVALID_IMGPULLSEC in ${INVALID_IMGPULLSECS}; do
+            local BUFFER=$(echo "${BUFFER}" | jq "del(.items[].imagePullSecrets[]|select(.name==\"${INVALID_IMGPULLSEC}\"))")
+        done
+    fi
+
+    delete_common_attr "${BUFFER}"
 }
 
 replicaset(){
     local BUFFER=$(export_type replicasets)
     local BUFFER=$(delete_common_attr "${BUFFER}")
-    echo "${BUFFER}" | jq 'del(.items[].ownerReferences.uid)'
+    delete_attr "${BUFFER}" 'del(.items[]|select(.metadata.ownerReferences!=null and .metadata.ownerReferences[].controller==true))'
 }
 
 deployment() {
-    local BUFFER=$(export_type replicasets)
+    local BUFFER=$(export_type deployment)
     local BUFFER=$(delete_common_attr "${BUFFER}")
-    echo "${BUFFER}" | jq 'del(.items[].metadata.annotations["deployment.kubernetes.io/revision"])'
+    local BUFFER=$(delete_attr "${BUFFER}" 'del(.items[].metadata.annotations["deployment.kubernetes.io/revision"])')
+    delete_attr "${BUFFER}" 'del(.items[]|select(.metadata.ownerReferences!=null and .metadata.ownerReferences[].controller==true))'
 }
 
 secret(){
     local BUFFER=$(export_type secrets)
-    local BUFFER=$(delete_common_attr "${BUFFER}")
-    local BUFFER=$(delete_attr "${BUFFER}" 'del(.items[]|select(.type=="kubernetes.io/service-account-token")) | del(.items[].metadata.annotations."kubernetes.io/service-account.uid")')
-    delete_attr "${BUFFER}" 'del(.items[]|select(.metadata.annotations["service.alpha.openshift.io/originating-service-name"] != null))'
+    local BUFFER=$(delete_attr "${BUFFER}" 'del(.items[]|select(.metadata.annotations["service.alpha.openshift.io/originating-service-name"] != null))')
+    local BUFFER=$(delete_attr "${BUFFER}" 'del(.items[]|select(.metadata.annotations["kubernetes.io/service-account.name"]!=null))')
+    local BUFFER=$(delete_attr "${BUFFER}" 'del(.items[].metadata.annotations."kubernetes.io/service-account.uid")')
+    delete_common_attr "${BUFFER}"
 }
 
 dc(){
     local BUFFER=$(export_type dc)
     local BUFFER=$(delete_common_attr "${BUFFER}")
-    echo "${BUFFER}" | jq 'del(.items[].spec.triggers[].imageChangeParams.lastTriggeredImage)'
+    delete_attr "${BUFFER}" 'del(.items[].spec.triggers[].imageChangeParams.lastTriggeredImage)'
+}
+
+rc(){
+    local BUFFER=$(export_type rc)
+    local BUFFER=$(delete_common_attr "${BUFFER}")
+    delete_attr "${BUFFER}" 'del(.items[]|select(.metadata.ownerReferences!=null and .metadata.ownerReferences[].controller==true))'
 }
 
 bc(){
     local BUFFER=$(export_type bc)
     local BUFFER=$(delete_common_attr "${BUFFER}")
-    echo "${BUFFER}" | jq 'del(.items[].spec.triggers[].imageChangeParams.lastTriggeredImage)'
+    delete_attr "${BUFFER}" 'del(.items[].spec.triggers[].imageChangeParams.lastTriggeredImage)'
+}
+
+build(){
+    local BUFFER=$(export_type build)
+    local BUFFER=$(delete_common_attr "${BUFFER}")
+    delete_attr "${BUFFER}" 'del(.items[]|select(.metadata.ownerReferences!=null and .metadata.ownerReferences[].controller==true))'
 }
 
 is(){
     local BUFFER=$(export_type is)
     local BUFFER=$(delete_common_attr "${BUFFER}")
-    echo "${BUFER}" | jq 'del(.items[].metadata.annotations."openshift.io/image.dockerRepositoryCheck")'
+    delete_attr "${BUFER}" 'del(.items[].metadata.annotations."openshift.io/image.dockerRepositoryCheck")'
 }
 
 svc(){
     local BUFFER=$(export_type svc)
     local BUFFER=$(delete_common_attr "${BUFFER}")
-    echo "${BUFFER}" | jq 'del(.items[].spec.clusterIP,.items[].metadata.annotations["service.alpha.openshift.io/serving-cert-signed-by"])'
+    delete_attr "${BUFFER}" 'del(.items[].spec.clusterIP,.items[].metadata.annotations["service.alpha.openshift.io/serving-cert-signed-by"])'
 }
 
 pvc(){
@@ -139,5 +168,13 @@ pvc(){
 
 pod() {
     local BUFFER=$(export_type pod)
-    delete_attr "${BUFFER}" 'del(.items[]|select(.metadata.ownerReferences[].controller==true))'
+    local BUFFER=$(delete_attr "${BUFFER}" 'del(.items[]|select(.metadata.ownerReferences!=null and .metadata.ownerReferences[].controller==true))')
+    local BUFFER=$(delete_attr "${BUFFER}" 'del(.items[]|select(.metadata.labels.jenkins=="slave"))')
+    delete_common_attr "${BUFFER}"
+}
+
+job() {
+    local BUFFER=$(export_type job)
+    local BUFFER=$(delete_attr "${BUFFER}" 'del(.items[]|select(.metadata.ownerReferences!=null and .metadata.ownerReferences[].controller==true))')
+    delete_common_attr "${BUFFER}"
 }

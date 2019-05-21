@@ -2,7 +2,8 @@
     "cluster-objects": [
         "clusterrolebinding",
         "clusterrole",
-        "group"
+        "group",
+        "persistentvolumes"
     ],
     "namespace-objects": [
         "secret",

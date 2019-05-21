@@ -24,6 +24,7 @@ export_project_objects() {
 # Exports a given list of projects
 export_projects() {
     if [[ -z  "$1" ]]; then
+        echo "No exportable projects found"
         return
     fi
 
@@ -39,7 +40,7 @@ export_projects() {
 
 # Loads all projects
 get_all_projects() {
-    oc get projects --no-headers | awk '{ print $1 }' | xargs
+    oc get projects --no-headers | awk '{ print $1 }'
 }
 
 # Exports cluster objects
@@ -85,7 +86,13 @@ clusterrole() {
 
 namespace() {
     local BUFFER=$(export_type namespace)
-    local BUFFER=$(echo "${BUFFER}" | jq 'del (.items[] | select(.metadata.labels["project-key"]==null))')
     local BUFFER=$(delete_attr "${BUFFER}" 'del(.items[].metadata.namespace')
     echo "${BUFFER}"
+}
+
+persistentvolumes() {
+    local BUFFER=$(export_type pv)
+    local BUFFER=$(delete_attr "${BUFFER}" 'del(.items[]|select(.spec.claimRef.namespace!=null))')
+    local BUFFER=$(delete_attr "${BUFFER}" 'del(.items[]|select(.spec.claimRef.namespace!=""))')
+    delete_common_attr "${BUFFER}"
 }
