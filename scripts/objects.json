@@ -3,15 +3,18 @@
         "clusterrolebinding",
         "clusterrole",
         "group",
-        "persistentvolumes"
+        "persistentvolumes",
+        "clusterquota"
     ],
     "namespace-objects": [
-        "is",
+        "imagestream",
+        "imagestreamtag",
         "secret",
         "cm",
         "networkpolicy",
         "serviceaccount",
         "rolebinding",
+        "role",
         "pod",
         "egressnetworkpolicy",
         "dc",
