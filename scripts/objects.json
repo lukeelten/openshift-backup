@@ -6,6 +6,7 @@
         "persistentvolumes"
     ],
     "namespace-objects": [
+        "is",
         "secret",
         "cm",
         "networkpolicy",
