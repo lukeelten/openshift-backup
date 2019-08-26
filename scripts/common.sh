@@ -1,8 +1,43 @@
 #!/bin/bash
 
 die(){
-    echo "$1" > /dev/stderr
+    log_error "$1"
     exit "$2"
+}
+
+__log() {
+    local LEVEL="${1}"
+    local MSG="${2}"
+    if [[ $# -lt 2 ]]; then
+        local LEVEL="ERROR"
+        local MSG="${1}"
+        log_debug "Invalid use of log system"
+    fi
+
+    local NOW=$(date '+%Y-%m-%d %H:%M:%S')
+    echo "${NOW}" "${LEVEL}" "${MSG}"
+}
+
+log_error() {
+    __log "ERROR" "$*" >> /dev/stderr
+}
+
+log_warn() {
+    __log "WARNING" "$*"
+}
+
+log_info() {
+    __log "INFO" "$*"
+}
+
+log_debug() {
+    if [[ "${DEBUG}" -ne "0" ]]; then
+        if [[ $# -gt 0 ]]; then
+            __log "DEBUG" "$*"
+        else
+            echo
+        fi
+    fi
 }
 
 # Check the required dependencies 
@@ -22,7 +57,7 @@ checkoc() {
 
     oc get all > /dev/null 2>&1
     if [[ $? -ne 0 ]]; then
-        die "Error: You are not logged in to the cluster." 4
+        die "You are not logged in to the cluster." 4
     fi
 }
 
@@ -47,8 +82,7 @@ usage(){
 # Exports a given type of objects
 export_type(){
     if [ $# -lt 1 ]; then
-        echo "Error: Invalid parameters for export type" > /dev/stderr
-        echo "Project: ${PROJECT}" > /dev/stderr
+        log_error "Invalid parameters for export type; Project: ${PROJECT}"
         return
     fi
 
@@ -227,7 +261,7 @@ encrypt_export() {
 
     # Archive Key and encrypted archive together
     tar cf "${FINAL_ARCHIVE}" "${OUTPUT_FILE}" "${ENCRYPTED_KEY_FILE}"
-    echo "Encrypt exported files to ${DIR_NAME}-encrypted.tar"
+    log_info "Encrypt exported files to ${DIR_NAME}-encrypted.tar"
 
     if [[ -z "${SECURE_DELETE}" ||  "${SECURE_DELETE}" == "0" ]]; then
         # No deleteion of sensible files
@@ -240,7 +274,7 @@ encrypt_export() {
     if [[ ! -z "${HAS_SHRED}" ]]; then
         shred -u -z ${FILES}
     else
-        echo "Warning: Cannot safely delete sensitive files. Fall back to 'dd' and 'rm'" > /dev/stderr
+        log_warn "Cannot safely delete sensitive files. Fall back to 'dd' and 'rm'"
         for FILE in ${FILES}; do 
             overwrite_with_dd "${FILE}"
             rm -f "${FILE}"
@@ -251,7 +285,7 @@ encrypt_export() {
 # Function to overwrite data with dd when shred is not available
 overwrite_with_dd() {
     if [[ ! -w "$1" ]]; then
-        echo "Cannot overwrite $1" > /dev/stderr
+        log_error "Cannot overwrite $1"
         return
     fi
 
@@ -271,6 +305,7 @@ DIR_NAME=${DIR_NAME}
 SECURE_DELETE=${SECURE_DELETE:-"1"}
 EXPORT_ALL=${EXPORT_ALL:-0}
 EXPORT_PROJECTS=${EXPORT_PROJECTS}
+DEBUG=$(sanitize_var "${DEBUG}")
 
 CUR_DATETIME_ISO=$(date +%Y-%m-%d)
 
@@ -286,3 +321,7 @@ fi
 OUTPUT_PATH=$(echo "${OUTPUT_PATH}" | sed -r 's/\/$//')
 DIR_NAME=$(echo "${DIR_NAME}" | sed -r 's/\/$//')
 BASENAME="${OUTPUT_PATH}/${DIR_NAME}"
+
+if [[ "${DEBUG}" -ne "0" ]]; then
+    log_warn "Running in debug mode. This mode should not be used in production"
+fi
