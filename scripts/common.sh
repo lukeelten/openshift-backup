@@ -199,7 +199,7 @@ namespace_objects_config() {
 # Function to compress exported files
 compress_export() {
     local ARCHIVE="${OUTPUT_PATH}/${DIR_NAME}.tar.gz"
-    echo "Compress exported files to ${DIR_NAME}.tar.gz"
+    log_info "Compress exported files to ${DIR_NAME}.tar.gz"
     tar czf "${ARCHIVE}" "${BASENAME}" > /dev/null
 
     if [[ -z "${SECURE_DELETE}" ||  "${SECURE_DELETE}" == "0" ]]; then
@@ -212,7 +212,7 @@ compress_export() {
     if [[ ! -z "${HAS_SHRED}" ]]; then
         find "${BASENAME}/" -type f -exec shred -u -z {} \;
     else
-        echo "Warning: Cannot safely delete sensible files. Fall back to 'dd' and 'rm'" > /dev/stderr
+        log_warn "Cannot safely delete sensible files. Fall back to 'dd' and 'rm'"
         local FILES=$(find "${BASENAME}/" -type f | xargs)
         for FILE in ${FILES}; do 
             overwrite_with_dd "${FILE}"

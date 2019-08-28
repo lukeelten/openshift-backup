@@ -53,7 +53,7 @@ export_cluster_objects() {
     local OBJECTS=$(cluster_objects_config)
 
     for OBJ in ${OBJECTS}; do
-        log_info "Exporting cluster obejcts of type ${OBJ}"
+        log_info "Exporting cluster objects of type ${OBJ}"
 
         if [[ ! -z $(declare -F "${OBJ}") ]]; then
             local BUFFER=$(${OBJ})
