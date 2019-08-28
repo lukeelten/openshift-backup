@@ -6,14 +6,14 @@ export_project() {
     PROJECT="$1"
 
     if [[ -z "${PROJECT}" ]]; then
-        echo "Error: No project name given" > /dev/stderr
+        log_error "No project name given to export"
         return
     fi
 
     # Switch to project
     oc project "${PROJECT}" > /dev/null 2>&1
     if [[ $? -ne 0 ]]; then
-        echo "Error: The given project \"${PROJECT}\" does not exist." > /dev/stderr
+        log_error "The given project \"${PROJECT}\" does not exist."
         return
     fi
 
@@ -26,7 +26,7 @@ export_project() {
     local OBJECTS=$(namespace_objects_config)
 
     for OBJ in ${OBJECTS}; do
-        echo "Exporting ${OBJ} of project ${PROJECT}"
+        log_debug "Exporting ${OBJ} of project ${PROJECT}"
 
         # the script checks whether there is a function with the name of the object to export
         # if so the function will be called to export the object, otherwise a default machanism will run
@@ -44,13 +44,11 @@ export_project() {
 
         # If result is not empty write to file
         if [[ ! -z "${BUFFER}" ]]; then
-            echo "Write result to ${PROJECT}/${OBJ}.json"
+            log_debug "Write result to ${PROJECT}/${OBJ}.json"
             echo "${BUFFER}" > "${BASENAME}/${PROJECT}/${OBJ}.json"
         else
-            echo "... Empty result ... Skipping"
+            log_debug "... Empty result ... Skipping"
         fi
-
-        echo
     done
 }
 

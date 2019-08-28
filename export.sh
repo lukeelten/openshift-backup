@@ -37,8 +37,6 @@ else
     die "Invalid usage" 1
 fi
 
-echo
-
 if [[ ! -z "${COMPRESS}" && "${COMPRESS}" != "0" ]]; then
     compress_export
 fi

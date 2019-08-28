@@ -1,10 +1,10 @@
 #!/bin/bash
 
 export_cluster() {
-    echo "Exporting all projects"
+    log_info "Exporting all projects"
     local PROJECTS=$(get_all_projects)
 
-    echo 
+    log_debug 
     export_cluster_objects
     export_projects "${PROJECTS}"
 }
@@ -24,15 +24,15 @@ export_project_objects() {
 # Exports a given list of projects
 export_projects() {
     if [[ -z  "$1" ]]; then
-        echo "No exportable projects found"
+        log_info "No exportable projects found"
         return
     fi
 
     export_project_objects "$*" > "${BASENAME}/projects.json"
 
     for PRJ in $*; do
-        echo "Exporting project: ${PRJ}"
-        echo 
+        log_info "Exporting project: ${PRJ}"
+        log_debug 
         
         export_project "${PRJ}"
     done
@@ -53,7 +53,7 @@ export_cluster_objects() {
     local OBJECTS=$(cluster_objects_config)
 
     for OBJ in ${OBJECTS}; do
-        echo "Exporting cluster obejcts ${OBJ}"
+        log_info "Exporting cluster objects of type ${OBJ}"
 
         if [[ ! -z $(declare -F "${OBJ}") ]]; then
             local BUFFER=$(${OBJ})
@@ -65,13 +65,12 @@ export_cluster_objects() {
         local BUFFER=$(truncate_empty_list "${BUFFER}")
 
         if [[ ! -z "${BUFFER}" ]]; then
-            echo "Write result to ${OBJ}.json"
             echo "${BUFFER}" > "${BASENAME}/${OBJ}.json"
         else
-            echo "... Empty result ... Skipping"
+            log_debug "... Empty result ... Skipping"
         fi
 
-        echo
+        log_debug
     done
 
     PROJECT="${PRJ_TMP}"
