@@ -4,7 +4,9 @@
         "clusterrole",
         "group",
         "persistentvolumes",
-        "clusterquota"
+        "clusterquota",
+        "storageclass",
+        "netnamespace"
     ],
     "namespace-objects": [
         "imagestream",
@@ -34,6 +36,8 @@
         "deployment",
         "poddisruptionbudget",
         "daemonset",
-        "pv"
+        "pv",
+        "ingress",
+        "podsecuritypolicy"
     ]
 } 
